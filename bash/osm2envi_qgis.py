@@ -4,7 +4,7 @@ from qgis.core import QgsApplication
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsVectorLayer,
-                       QgsProject,
+                       QgsProject,                      
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFile,
@@ -42,7 +42,11 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
     """
  Runs the 'osm2envi_gis.sh' bash script, which is assumed to be in the same directory as the qgis interface script, as a QGIS processing tool. You will need to provide a correctly digitised extent file and the target CRS. A DSM and DEM will be required to extract building heights.    """
     # Get the default QGIS profile directory
-    profile_path = QgsApplication.qgisSettingsDirPath()
+    # Compatible with older QGIS versions
+    try:
+        profile_path = QgsApplication.qgisSettingsDirPath()
+    except AttributeError:
+        profile_path = QgsApplication.qgisUserSettingsDirPath()
 
     # Construct the path to the processing scripts folder
     scripts_folder = os.path.join(profile_path, 'processing', 'scripts')
@@ -88,12 +92,13 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
         command = ["stdbuf", "-oL", "-eL"] + command
 
     # Start the subprocess with unbuffered output
+    # Compatible subprocess for older Python versions
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         bufsize=1,
-        text=True
+        universal_newlines=True
     )
 
     # Setup queue and threads for stdout and stderr
