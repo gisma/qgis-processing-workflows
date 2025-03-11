@@ -1,15 +1,11 @@
----
-title: "osm2envi"
-format: html
----
 
-## 🚀 Installation Guide: Adding Bash Script to QGIS Processing Tools
+## Installation Guide: Adding Bash Script to QGIS Processing Tools
 
 This guide will help you install and integrate a custom Bash script into QGIS Processing Tools for **Windows**, **Linux**, and **macOS**.
 
 ---
 
-## ✅ Step 1: Locate the QGIS Processing Scripts Folder
+## Step 1: Locate the QGIS Processing Scripts Folder
 
 - Open **QGIS**.
 - Go to **`Settings` > `Options`**.
@@ -19,7 +15,7 @@ This guide will help you install and integrate a custom Bash script into QGIS Pr
 
 ---
 
-## ✅ Step 2: Copy the Bash Script and Python Integration Script
+## Step 2: Copy the Bash Script and Python Integration Script
 
 1. **Download or Prepare Your Files**:
    - **Python Script** (`osm2envi_qgis.py`): This integrates the Bash script into QGIS Processing Tools.
@@ -30,7 +26,7 @@ This guide will help you install and integrate a custom Bash script into QGIS Pr
 
 ---
 
-## ✅ Step 3: Grant Execute Permissions (Linux/macOS Only)
+## Step 3: Grant Execute Permissions (Linux/macOS Only)
 
 For **Linux/macOS**, make the Bash script executable:
 
@@ -40,7 +36,7 @@ chmod +x /path/to/your/qgis/scripts/osm2envi_qgis.sh
 
 ---
 
-## ✅ Step 4: Install Bash (If Not Installed)
+## Step 4: Install Bash (If Not Installed)
 
 - **Windows**:
   - Install [**Git Bash**](https://git-scm.com/download/win).
@@ -52,13 +48,13 @@ chmod +x /path/to/your/qgis/scripts/osm2envi_qgis.sh
 
 ---
 
-## ✅ Step 5: Restart QGIS
+## Step 5: Restart QGIS
 
 - Restart **QGIS** to ensure it detects the new processing script.
 
 ---
 
-## ✅ Step 6: Running the Script in QGIS
+## Step 6: Running the Script in QGIS
 
 1. Open the **Processing Toolbox** (`Ctrl + Alt + T`).
 2. Under **`Scripts` > `Custom Scripts`**, you should see **`Run Bash Script`**.
@@ -69,7 +65,7 @@ chmod +x /path/to/your/qgis/scripts/osm2envi_qgis.sh
 
 ---
 
-## ✅ Troubleshooting
+##  Troubleshooting
 
 - If the script is not appearing:
   - Ensure the **Scripts provider** is enabled in QGIS Options.
@@ -84,5 +80,5 @@ chmod +x /path/to/osm2envi_qgis.sh
 
 ---
 
-And you're done! 🎉 Your custom Bash script is now integrated into **QGIS Processing Tools** You can find it under `Scripts->Envi_met Tools->OSM2Envi_met`.
+And you're done! Your custom Bash script is now integrated into **QGIS Processing Tools** You can find it under `Scripts->Envi_met Tools->OSM2Envi_met`.
 
