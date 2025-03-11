@@ -1,4 +1,6 @@
-from qgis.PyQt.QtCore import QCoreApplication
+
+import os
+from qgis.core import QgsApplication
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingException,
@@ -10,7 +12,7 @@ from qgis.core import (QgsProcessing,
 from qgis import processing
 from qgis.processing import alg
 import subprocess
-import os
+
 import platform
 import re
 import threading
@@ -36,7 +38,15 @@ def enqueue_output(pipe, queue):
 def run_bash_script(instance, parameters, context, feedback, values=None):
     """
  Runs the 'osm2envi_gis.sh' bash script, which is assumed to be in the same directory as the qgis interface script, as a QGIS processing tool. You will need to provide a correctly digitised extent file and the target CRS. A DSM and DEM will be required to extract building heights.    """
-    script_path = "osm2envi_qgis.sh"
+    # Get the default QGIS profile directory
+    profile_path = QgsApplication.qgisSettingsDirPath()
+
+    # Construct the path to the processing scripts folder
+    scripts_folder = os.path.join(profile_path, 'processing', 'scripts')
+
+    # Define the script path
+    script_path = os.path.join(scripts_folder, "osm2envi_qgis.sh")
+
     osm_file = parameters["OSM"]
     dem_file = parameters.get("DEM", None)
     dsm_file = parameters.get("DSM", None)
