@@ -117,8 +117,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol type="1">
 <li><strong>Download or Prepare Your Files</strong>:
 <ul>
-<li><strong>Python Script</strong> (<code>run_bash_script.py</code>): This integrates the Bash script into QGIS Processing Tools.</li>
-<li><strong>Bash Script</strong> (<code>process_osm.sh</code>): The actual Bash script performing the processing.</li>
+<li><strong>Python Script</strong> (<code>osm2envi_qgis.py</code>): This integrates the Bash script into QGIS Processing Tools.</li>
+<li><strong>Bash Script</strong> (<code>osm2envi_qgis</code>): The actual Bash script performing the processing.</li>
 </ul></li>
 <li><strong>Copy the Files</strong>:
 <ul>
@@ -130,7 +130,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="step-3-grant-execute-permissions-linuxmacos-only" class="level2">
 <h2 class="anchored" data-anchor-id="step-3-grant-execute-permissions-linuxmacos-only">✅ Step 3: Grant Execute Permissions (Linux/macOS Only)</h2>
 <p>For <strong>Linux/macOS</strong>, make the Bash script executable:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x /path/to/your/qgis/scripts/process_osm.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x /path/to/your/qgis/scripts/osm2envi_qgis.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <hr>
 </section>
 <section id="step-4-install-bash-if-not-installed" class="level2">
@@ -181,9 +181,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 <li>For Linux/macOS, ensure executable permission is correctly set with:</li>
 </ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x /path/to/process_osm.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x /path/to/osm2envi_qgis.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <hr>
-<p>And you’re all set! 🎉 Your custom Bash script is now integrated into <strong>QGIS Processing Tools</strong>.</p>
+<p>And you’re done! 🎉 Your custom Bash script is now integrated into <strong>QGIS Processing Tools</strong> You can find it under <code>Scripts-&gt;Envi_met Tools-&gt;OSM2Envi_met</code>.</p>
 </section>
 
 </main>
