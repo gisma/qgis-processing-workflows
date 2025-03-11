@@ -4,48 +4,50 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFile,
-                       QgsProcessingParameterFolderDestination)
+                       QgsProcessingParameterFolderDestination,
+                       QgsProcessingParameterCrs,
+                       QgsProcessingParameterExtent)
 from qgis import processing
 from qgis.processing import alg
 import subprocess
 import os
 import platform
 import re
-import sys
+import threading
+from queue import Queue, Empty
 
-# Function to remove ANSI escape codes from output logs
 def strip_ansi_codes(text):
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub('', text)
 
-@alg(name="run_bash", label="Run Bash Script", group="Custom Scripts", group_label="Custom Scripts")
-@alg.input(type=alg.FILE, name="SCRIPT", label="Bash Script (Must be an .sh file)")  # Updated label
-@alg.input(type=alg.FILE, name="OSM", label="OSM File (Required)")  
+def enqueue_output(pipe, queue):
+    for line in iter(pipe.readline, ''):
+        queue.put(line)
+    pipe.close()
+
+@alg(name="run_bash", label="OSM2Envi_met", group="Custom Scripts", group_label="Custom Scripts")
+#@alg.input(type=alg.FILE, name="SCRIPT", label="Bash Script (Must be an .sh file)")
+@alg.input(type=alg.FILE, name="OSM", label="OSM File (Required)")
 @alg.input(type=alg.FILE, name="DEM", label="DEM File (Optional, must be used with DSM)", optional=True)
 @alg.input(type=alg.FILE, name="DSM", label="DSM File (Optional, must be used with DEM)", optional=True)
+@alg.input(type=alg.CRS, name="CRS", label="Select Target CRS")
+@alg.input(type=alg.EXTENT, name="EXTENT", label="Select Extent")
 @alg.output(type=alg.FOLDER, name="RESULT", label="Processed Output Directory")
-
 def run_bash_script(instance, parameters, context, feedback, values=None):
     """
-    Runs a Bash script as a QGIS Processing Tool, ensuring cross-platform execution.
-    
-    ⚠ Windows: You must download and install Git Bash for Windows!
-        Step 1: Download Git Bash 
-                🔗 https://git-scm.com/downloads
-        Step 2: Run the installer (Git-*-64-bit.exe).
-        Step 3: Restart QGIS
-    """
-
-    # Get script path and input files
-    script_path = parameters["SCRIPT"]
+ Runs the 'osm2envi_gis.sh' bash script, which is assumed to be in the same directory as the qgis interface script, as a QGIS processing tool. You will need to provide a correctly digitised extent file and the target CRS. A DSM and DEM will be required to extract building heights.    """
+    script_path = "osm2envi_qgis.sh"
     osm_file = parameters["OSM"]
     dem_file = parameters.get("DEM", None)
     dsm_file = parameters.get("DSM", None)
+    target_crs = parameters["CRS"].authid()
+    extent = parameters["EXTENT"]
 
     feedback.pushInfo(f"🔧 Running Bash script: {script_path}")
     feedback.pushInfo(f"📂 OSM File: {osm_file}")
+    feedback.pushInfo(f"🌐 Target CRS: {target_crs}")
+    feedback.pushInfo(f"📐 Selected Extent: {extent}")
 
-    # Check if both DEM and DSM are provided together
     if (dem_file and not dsm_file) or (dsm_file and not dem_file):
         feedback.reportError("❌ Error: DEM and DSM must both be provided or both omitted.", fatalError=True)
         return {"RESULT": ""}
@@ -54,76 +56,72 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
         feedback.pushInfo(f"📂 DEM File: {dem_file}")
         feedback.pushInfo(f"📂 DSM File: {dsm_file}")
 
-    # Detect OS and set Bash path accordingly
     if platform.system() == "Windows":
-        bash_path = r"C:\Program Files\Git\bin\bash.exe"  # Use Git Bash
-        feedback.pushInfo("⚠️ Windows Users: This script requires Git Bash. Download from: https://git-scm.com/downloads")
-        
-        # Setup Windows process startup info to minimize window
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = 6  # Minimized window
-
+        bash_path = r"C:\\Program Files\\Git\\bin\\bash.exe"
     else:
-        bash_path = "/bin/bash"  # Default for Linux/Mac
-        startupinfo = None  # No need for startup settings on Unix-like systems
+        bash_path = "/bin/bash"
 
-    # Test if Bash is available
-    try:
-        subprocess.run([bash_path, "-c", "ls"], check=True, capture_output=True)
-        feedback.pushInfo("✅ Bash environment is available.")
-    except FileNotFoundError:
-        feedback.reportError("❌ Error: Bash is not installed. Install Git Bash for Windows.", fatalError=True)
-        return {"RESULT": ""}
-
-    # Ensure script is executable (Only on Unix-like systems)
+    # Make script executable on non-Windows
     if platform.system() != "Windows":
         subprocess.run(["chmod", "+x", script_path], check=True)
 
-    # Prepare command arguments
-    command = [bash_path, script_path, osm_file]
-    
-    # Append DEM & DSM **only if both are provided**
+    # Prepare command with unbuffered output using 'stdbuf'
+    command = [bash_path, script_path, osm_file, "-c", target_crs, "-e", extent]
     if dem_file and dsm_file:
-        command.extend([dem_file, dsm_file])
+        command.extend(["-s", dsm_file, "-d", dem_file])
 
-    # Run Bash script with real-time output streaming and minimized window on Windows
+    if platform.system() != "Windows":
+        command = ["stdbuf", "-oL", "-eL"] + command
+
+    # Start the subprocess with unbuffered output
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=1,
+        text=True
+    )
+
+    # Setup queue and threads for stdout and stderr
+    q_stdout = Queue()
+    q_stderr = Queue()
+
+    t_stdout = threading.Thread(target=enqueue_output, args=(process.stdout, q_stdout))
+    t_stderr = threading.Thread(target=enqueue_output, args=(process.stderr, q_stderr))
+    t_stdout.start()
+    t_stderr.start()
+
     try:
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            startupinfo=startupinfo  # This minimizes the window on Windows
-        )
+        while True:
+            try:
+                # Process stdout
+                line = q_stdout.get_nowait()
+                if line:
+                    feedback.pushInfo(strip_ansi_codes(line.strip()))
+            except Empty:
+                pass
 
-        # Read output line by line and display in real-time
-        for line in iter(process.stdout.readline, ""):
-            clean_line = strip_ansi_codes(line.strip())
-            feedback.pushInfo(clean_line)  # Display in QGIS log
-            print(clean_line)  # Display in Bash shell
+            try:
+                # Process stderr
+                err = q_stderr.get_nowait()
+                if err:
+                    feedback.reportError(strip_ansi_codes(err.strip()), fatalError=False)
+            except Empty:
+                pass
 
-        for line in iter(process.stderr.readline, ""):
-            clean_line = strip_ansi_codes(line.strip())
-            feedback.reportError(clean_line, fatalError=False)
-            print(clean_line)  # Show errors in Bash shell
+            if process.poll() is not None:
+                break
 
-        # Wait for process to finish
-        process.stdout.close()
-        process.stderr.close()
-        process.wait()
+        t_stdout.join()
+        t_stderr.join()
 
         if process.returncode != 0:
             feedback.reportError(f"❌ Script execution failed with exit code {process.returncode}.", fatalError=True)
             return {"RESULT": ""}
 
-    except subprocess.CalledProcessError as e:
-        clean_error = strip_ansi_codes(e.stderr)
-        feedback.reportError(f"❌ Script execution failed: {clean_error}", fatalError=True)
+    except Exception as e:
+        feedback.reportError(f"❌ Exception during script execution: {str(e)}", fatalError=True)
         return {"RESULT": ""}
 
-    # Return a dummy output directory as required by QGIS Processing
-    output_dir = os.path.dirname(script_path)  # Example: Place results in the same directory
+    output_dir = os.path.dirname(script_path)
     return {"RESULT": output_dir}
