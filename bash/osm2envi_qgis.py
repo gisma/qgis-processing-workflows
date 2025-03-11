@@ -19,7 +19,7 @@ import threading
 from queue import Queue, Empty
 
 def strip_ansi_codes(text):
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])')
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub('', text)
 
 def enqueue_output(pipe, queue):
@@ -47,6 +47,7 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
     # Define the script path
     script_path = os.path.join(scripts_folder, "osm2envi_qgis.sh")
 
+    
     osm_file = parameters["OSM"]
     dem_file = parameters.get("DEM", None)
     dsm_file = parameters.get("DSM", None)
@@ -133,5 +134,4 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
         feedback.reportError(f"❌ Exception during script execution: {str(e)}", fatalError=True)
         return {"RESULT": ""}
 
-    output_dir = os.path.dirname(script_path)
-    return {"RESULT": output_dir}
+
