@@ -3,6 +3,8 @@ import os
 from qgis.core import QgsApplication
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
+                       QgsVectorLayer,
+                       QgsProject,
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFile,
@@ -34,6 +36,7 @@ def enqueue_output(pipe, queue):
 @alg.input(type=alg.FILE, name="DSM", label="DSM File (Optional, must be used with DEM)", optional=True)
 @alg.input(type=alg.CRS, name="CRS", label="Select Target CRS")
 @alg.input(type=alg.EXTENT, name="EXTENT", label="Select Extent")
+@alg.input(type=alg.BOOL, name="LOAD_LAYERS", label="Load Result Layers in QGIS", default=True)
 @alg.output(type=alg.FOLDER, name="RESULT", label="Processed Output Directory")
 def run_bash_script(instance, parameters, context, feedback, values=None):
     """
@@ -77,7 +80,7 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
         subprocess.run(["chmod", "+x", script_path], check=True)
 
     # Prepare command with unbuffered output using 'stdbuf'
-    command = [bash_path, script_path, osm_file, "-c", target_crs, "-e", extent]
+    command = [bash_path, script_path, "-i", osm_file, "-c", target_crs, "-e", extent]
     if dem_file and dsm_file:
         command.extend(["-s", dsm_file, "-d", dem_file])
 
@@ -134,4 +137,31 @@ def run_bash_script(instance, parameters, context, feedback, values=None):
         feedback.reportError(f"❌ Exception during script execution: {str(e)}", fatalError=True)
         return {"RESULT": ""}
 
+    # Retrieve the 'LOAD_LAYERS' parameter correctly
+    load_layers = parameters.get("LOAD_LAYERS", False)
 
+    # Determine the output directory relative to the input OSM file
+    input_dir = os.path.dirname(osm_file)
+    output_dir = os.path.join(os.path.dirname(input_dir), 'output')
+
+    # Define expected result layers
+    result_layers = [
+        os.path.join(output_dir, f"{os.path.basename(osm_file).replace('.osm', '')}_surface_final_envimet.gpkg"),
+        os.path.join(output_dir, f"{os.path.basename(osm_file).replace('.osm', '')}_vegetation_final_envimet.gpkg"),
+        os.path.join(output_dir, f"{os.path.basename(osm_file).replace('.osm', '')}_buildings_final_envimet.gpkg")
+    ]
+
+    # Conditionally load the layers if the checkbox is checked
+    if load_layers:
+        for layer_path in result_layers:
+            if os.path.exists(layer_path):
+                layer = QgsVectorLayer(layer_path, os.path.basename(layer_path), "ogr")
+                if layer.isValid():
+                    QgsProject.instance().addMapLayer(layer)
+                    feedback.pushInfo(f"✅ Loaded layer: {layer_path}")
+                else:
+                    feedback.reportError(f"❌ Invalid layer: {layer_path}")
+            else:
+                feedback.reportError(f"❌ Layer file not found: {layer_path}")
+    else:
+        feedback.pushInfo("ℹ️ User chose not to load the resulting layers.")
