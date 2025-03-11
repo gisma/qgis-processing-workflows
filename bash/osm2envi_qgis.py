@@ -25,7 +25,7 @@ def enqueue_output(pipe, queue):
         queue.put(line)
     pipe.close()
 
-@alg(name="run_bash", label="OSM2Envi_met", group="Custom Scripts", group_label="Custom Scripts")
+@alg(name="run_bash", label="OSM2Envi_met", group="Envi_met Tools", group_label="Envi_met Tools")
 #@alg.input(type=alg.FILE, name="SCRIPT", label="Bash Script (Must be an .sh file)")
 @alg.input(type=alg.FILE, name="OSM", label="OSM File (Required)")
 @alg.input(type=alg.FILE, name="DEM", label="DEM File (Optional, must be used with DSM)", optional=True)
