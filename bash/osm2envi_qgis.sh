@@ -203,15 +203,15 @@
       WHEN \"highway\" = 'tertiary' THEN '0200AK'
       WHEN \"highway\" = 'tertiary_link' THEN '0200AK'
       WHEN \"surface\" = 'asphalt' THEN '0200AK'
-      WHEN \"surface\" = 'ground' THEN '0200TS'
-      WHEN \"surface\" = 'dirt' THEN '0200TS'
-      WHEN \"surface\" = 'mud' THEN '0200TS'
+      WHEN \"surface\" = 'ground' THEN '0200LS'
+      WHEN \"surface\" = 'dirt' THEN '0200LS'
+      WHEN \"surface\" = 'mud' THEN '0200LS'
       WHEN \"surface\" = 'fine_gravel' THEN '0200BS'
       WHEN \"surface\" = 'gravel' THEN '0200BS'
       WHEN \"surface\" = 'grass' THEN '02AGSS'
-      WHEN \"surface\" = 'unpaved' THEN '0200TS'
+      WHEN \"surface\" = 'unpaved' THEN '0200LS'
       WHEN \"surface\" = 'compacted' THEN '0200BS'
-      ELSE '0200TS'
+      ELSE '0200LS'
   END"
   
   # Land use classification
